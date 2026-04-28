@@ -4,24 +4,29 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.config import get_settings
 
 settings = get_settings()
 
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt rejects passwords longer than 72 bytes; truncate before hashing.
+_MAX_BCRYPT_BYTES = 72
+
+
+def _truncate(plain: str) -> bytes:
+    return plain.encode("utf-8")[:_MAX_BCRYPT_BYTES]
 
 
 def hash_password(plain: str) -> str:
-    return _pwd.hash(plain)
+    return bcrypt.hashpw(_truncate(plain), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     try:
-        return _pwd.verify(plain, hashed)
-    except Exception:
+        return bcrypt.checkpw(_truncate(plain), hashed.encode("utf-8"))
+    except (ValueError, TypeError):
         return False
 
 
