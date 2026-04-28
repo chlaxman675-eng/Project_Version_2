@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.backend
+    container_name: surakshanet-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./surakshanet.db
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ENABLE_SIMULATION_ON_STARTUP=true
+    volumes:
+      - backend-data:/app/backend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile.frontend
+    container_name: surakshanet-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-data:
