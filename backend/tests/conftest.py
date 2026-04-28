@@ -19,6 +19,8 @@ for p in (_BACKEND, _REPO):
 # Use an isolated test DB that doesn't collide with dev data.
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./surakshanet_test.db")
 os.environ.setdefault("ENABLE_SIMULATION_ON_STARTUP", "false")
+# Force the lightweight mock detector for tests so we don't download YOLO weights.
+os.environ.setdefault("ENABLE_YOLO", "false")
 
 
 @pytest.fixture(scope="session")

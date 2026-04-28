@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Pole, api } from "../api";
+import { Pole, STREAM_URL, api } from "../api";
 import { useDashboardStore } from "../store";
 
 export default function LiveConsolePage() {
   const [poles, setPoles] = useState<Pole[]>([]);
+  const [streamErrors, setStreamErrors] = useState<Record<string, boolean>>({});
   const inferenceByPole = useDashboardStore((s) => s.inferenceByPole);
   const telemetryByPole = useDashboardStore((s) => s.telemetryByPole);
   const incidents = useDashboardStore((s) => s.incidents);
@@ -38,21 +39,31 @@ export default function LiveConsolePage() {
               </span>
             </div>
             <div
-              className="aspect-video rounded-md border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 grid place-items-center text-center mb-3 relative overflow-hidden"
-              style={{ backgroundImage: gradientFor(sceneLabel) }}
+              className="aspect-video rounded-md border border-slate-800 bg-slate-950 mb-3 relative overflow-hidden"
+              style={!streamErrors[p.id] ? undefined : { backgroundImage: gradientFor(sceneLabel) }}
             >
-              <div className="absolute inset-2 border border-slate-700/50 rounded" />
-              <div className="text-xs uppercase tracking-widest text-slate-300">
-                {sceneLabel.replace(/_/g, " ")}
+              {!streamErrors[p.id] ? (
+                <img
+                  src={`${STREAM_URL}/${p.id}/mjpeg`}
+                  alt={`${p.name} live stream`}
+                  className="w-full h-full object-cover"
+                  onError={() => setStreamErrors((prev) => ({ ...prev, [p.id]: true }))}
+                />
+              ) : (
+                <div className="absolute inset-0 grid place-items-center text-center">
+                  <div className="text-xs uppercase tracking-widest text-slate-300">
+                    {sceneLabel.replace(/_/g, " ")}
+                  </div>
+                </div>
+              )}
+              <div className="absolute top-2 left-2 text-[10px] font-mono text-slate-200 bg-black/40 px-1 rounded">
+                CAM · YOLOv8n · {streamErrors[p.id] ? "fallback" : "live"}
               </div>
-              <div className="absolute top-2 left-2 text-[10px] font-mono text-slate-300">
-                CAM · 1280×720 · 30fps
-              </div>
-              <div className="absolute bottom-2 left-2 text-[10px] font-mono text-slate-300">
-                people: {inf?.scene?.people_count ?? 0}
+              <div className="absolute bottom-2 left-2 text-[10px] font-mono text-slate-200 bg-black/40 px-1 rounded">
+                people: {inf?.scene?.people_count ?? 0} · motion {motion.toFixed(0)}%
               </div>
               {inf?.vision?.length ? (
-                <div className="absolute bottom-2 right-2 text-[10px] font-mono px-1.5 py-0.5 bg-red-600/40 border border-red-500 rounded">
+                <div className="absolute bottom-2 right-2 text-[10px] font-mono px-1.5 py-0.5 bg-red-600/50 border border-red-500 rounded">
                   AI: {inf.vision.map((v) => `${v.label} ${(v.confidence * 100).toFixed(0)}%`).join(", ")}
                 </div>
               ) : null}

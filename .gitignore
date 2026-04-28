@@ -39,3 +39,7 @@ Thumbs.db
 # Models
 ai_models/*.pt
 ai_models/*.onnx
+
+# YOLO weights downloaded at runtime
+*.pt
+!ai_models/.gitkeep

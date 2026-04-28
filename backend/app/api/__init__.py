@@ -10,6 +10,7 @@ from app.api import (
     poles,
     prediction,
     simulation,
+    stream,
     telemetry,
     websocket,
 )
@@ -24,4 +25,5 @@ api_router.include_router(citizen.router, prefix="/citizen", tags=["citizen"])
 api_router.include_router(telemetry.router, prefix="/telemetry", tags=["telemetry"])
 api_router.include_router(poles.router, prefix="/poles", tags=["poles"])
 api_router.include_router(simulation.router, prefix="/simulation", tags=["simulation"])
+api_router.include_router(stream.router, tags=["stream"])
 api_router.include_router(websocket.router, tags=["websocket"])
