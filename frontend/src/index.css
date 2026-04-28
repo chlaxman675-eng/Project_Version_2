@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    @apply font-sans antialiased bg-slate-950 text-slate-100;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur p-4 shadow-lg;
+  }
+  .panel-title {
+    @apply text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-critical { @apply bg-red-600/20 text-red-300 border border-red-600/30; }
+  .badge-high { @apply bg-orange-600/20 text-orange-300 border border-orange-600/30; }
+  .badge-medium { @apply bg-amber-500/20 text-amber-300 border border-amber-500/30; }
+  .badge-low { @apply bg-slate-600/30 text-slate-200 border border-slate-600/30; }
+  .btn {
+    @apply px-3 py-1.5 rounded-md text-sm font-medium border transition-colors;
+  }
+  .btn-primary { @apply bg-suraksha-600 hover:bg-suraksha-500 border-suraksha-700 text-white; }
+  .btn-ghost { @apply bg-transparent border-slate-700 hover:bg-slate-800 text-slate-200; }
+  .btn-danger { @apply bg-red-600 hover:bg-red-500 border-red-700 text-white; }
+}
+
+.leaflet-container {
+  background: #020617;
+}
