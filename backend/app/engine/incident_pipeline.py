@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from app.ai.audio import AudioClassifier, build_default_audio_classifier
 from app.ai.fusion import FusedThreat, FusionEngine
+from app.ai.pose import PoseEstimator, build_default_pose_estimator
 from app.ai.vision import VisionDetector, build_default_detector
 from app.alerts.manager import AlertManager
 from app.config import get_settings
@@ -54,6 +55,7 @@ class IncidentPipeline:
         self.settings = get_settings()
         self.vision: VisionDetector = build_default_detector()
         self.audio: AudioClassifier = build_default_audio_classifier()
+        self.pose: PoseEstimator = build_default_pose_estimator()
         self.fusion = FusionEngine()
         self.alerts = AlertManager()
         self.dispatch = DispatchRecommender()
@@ -145,19 +147,33 @@ class IncidentPipeline:
         vision_dets = self.vision.infer(cam.payload)
         audio_preds = self.audio.infer(mic.payload)
 
+        # Optional pose estimation enrichment (only on real image frames)
+        pose_detections = []
+        if self.settings.enable_pose_estimation:
+            try:
+                pose_results = self.pose.infer(cam.payload)
+                if pose_results:  # Only convert if poses detected
+                    pose_detections = self.pose.to_vision_detections(pose_results)
+            except Exception:
+                # Pose estimation failed silently - continue with other detections
+                pose_detections = []
+
+        # Combine vision and pose detections for fusion
+        all_vision_dets = vision_dets + pose_detections
+
         # Surface raw inferences for the live console even when below threshold.
         await bus.publish("inference", {
             "pole_id": node.pole_id,
-            "vision": [d.__dict__ for d in vision_dets],
+            "vision": [d.__dict__ for d in all_vision_dets],
             "audio": [p.__dict__ for p in audio_preds],
             "scene": cam.payload,
             "timestamp": cam.timestamp.isoformat(),
         })
-        if vision_dets or audio_preds:
+        if all_vision_dets or audio_preds:
             self._total_detections += 1
 
         threats = self.fusion.fuse(
-            vision=vision_dets,
+            vision=all_vision_dets,
             audio=audio_preds,
             motion_payload=mot.payload,
             panic_payload=pan.payload,
