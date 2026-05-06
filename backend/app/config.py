@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     detection_confidence_threshold: float = 0.55
     fusion_alert_threshold: float = 0.65
 
+    # Pose estimation (optional enhancement)
+    enable_pose_estimation: bool = False  # MediaPipe Pose for fall/posture detection
+
     # Simulation
     simulation_tick_seconds: float = 2.0
     enable_simulation_on_startup: bool = True

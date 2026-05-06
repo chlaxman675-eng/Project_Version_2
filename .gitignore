@@ -1,41 +1,24 @@
+```
 # Python
 __pycache__/
 *.pyc
 *.pyo
-.venv/
-.venv-*/
-*.egg-info/
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
+*.pyd
 
-# Node
-node_modules/
-dist/
-.vite/
-*.tsbuildinfo
-frontend/vite.config.d.ts
-frontend/vite.config.js
+# Logs and temp files
+*.log
+*.tmp
 
-# DBs / artifacts
-*.db
-*.sqlite
-*.sqlite3
-surakshanet*.db
+# Environment
+.env
+.env.local
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
 
-# Env
-.env
-.env.local
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Models
-ai_models/*.pt
-ai_models/*.onnx
+# Dependencies
+.venv/
+venv/
+```
