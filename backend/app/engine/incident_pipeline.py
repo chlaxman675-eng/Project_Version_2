@@ -11,7 +11,8 @@ from sqlalchemy import select
 
 from app.ai.audio import AudioClassifier, build_default_audio_classifier
 from app.ai.fusion import FusedThreat, FusionEngine
-from app.ai.pose import PoseEstimator, build_default_pose_estimator
+from app.ai.pose import PoseDetection, PoseEstimator, build_default_pose_estimator
+from app.ai.scoring import get_pose_adjuster
 from app.ai.vision import VisionDetector, build_default_detector
 from app.alerts.manager import AlertManager
 from app.config import get_settings
@@ -148,15 +149,26 @@ class IncidentPipeline:
         audio_preds = self.audio.infer(mic.payload)
 
         # Optional pose estimation enrichment (only on real image frames)
-        pose_detections = []
+        pose_detections: list[PoseDetection] = []
+        pose_adjustments: dict[str, dict[str, Any]] = {}
         if self.settings.enable_pose_estimation:
             try:
                 pose_results = self.pose.infer(cam.payload)
-                if pose_results:  # Only convert if poses detected
-                    pose_detections = self.pose.to_vision_detections(pose_results)
+                if pose_results:  # Only process if poses detected
+                    pose_detections_raw = pose_results
+                    # Compute pose-based score adjustments
+                    pose_adjuster = get_pose_adjuster()
+                    pose_adjustments = pose_adjuster.compute_adjustments(
+                        pole_id=node.pole_id,
+                        pose_detections=pose_detections_raw,
+                        current_time=time.time(),
+                    )
+                    # Convert to vision detections for fusion
+                    pose_detections = self.pose.to_vision_detections(pose_detections_raw)
             except Exception:
                 # Pose estimation failed silently - continue with other detections
                 pose_detections = []
+                pose_adjustments = {}
 
         # Combine vision and pose detections for fusion
         all_vision_dets = vision_dets + pose_detections
@@ -177,6 +189,7 @@ class IncidentPipeline:
             audio=audio_preds,
             motion_payload=mot.payload,
             panic_payload=pan.payload,
+            pose_adjustments=pose_adjustments,
         )
 
         for threat in threats:
