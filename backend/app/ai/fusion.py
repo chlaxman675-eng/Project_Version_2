@@ -35,6 +35,8 @@ class FusedThreat:
     severity: str
     sources: dict[str, float] = field(default_factory=dict)
     description: str = ""
+    pose_boost: float = 0.0  # Optional pose-derived score adjustment
+    pose_tags: list[str] = field(default_factory=list)  # Tags for pose adjustments
 
 
 class FusionEngine:
@@ -50,6 +52,7 @@ class FusionEngine:
         audio: list[AudioPrediction],
         motion_payload: dict | None,
         panic_payload: dict | None,
+        pose_adjustments: dict[str, dict[str, Any]] | None = None,
     ) -> list[FusedThreat]:
         # Aggregate per-label confidence from each modality.
         evidence: dict[str, dict[str, float]] = {}
@@ -88,7 +91,21 @@ class FusionEngine:
             score = self._aggregate(sources, meta["weight"])
             if score < self.settings.fusion_alert_threshold and label != "panic_sos":
                 continue
+            
+            # Apply pose-based score adjustments if available
+            pose_boost = 0.0
+            pose_tags: list[str] = []
+            if pose_adjustments and label in pose_adjustments:
+                adj = pose_adjustments[label]
+                pose_boost = adj.get("boost", 0.0)
+                if "tag" in adj:
+                    pose_tags = [adj["tag"]]
+                score = min(0.99, score + pose_boost)
+            
             description = self._describe(label, sources)
+            if pose_boost > 0:
+                description += f" [pose-adjusted +{pose_boost:.2f}]"
+            
             threats.append(
                 FusedThreat(
                     incident_type=label,
@@ -96,6 +113,8 @@ class FusionEngine:
                     severity=meta["severity"],
                     sources={k: round(v, 3) for k, v in sources.items()},
                     description=description,
+                    pose_boost=round(pose_boost, 3),
+                    pose_tags=pose_tags,
                 )
             )
         return threats
