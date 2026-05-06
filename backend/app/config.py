@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./surakshanet.db"
 
     # AI / inference
-    enable_yolo: bool = False  # heavy dep; off by default for MVP, mock detector active
+    # YOLOv8n weights (~6MB) auto-download on first inference. Set to False to
+    # force the rule-based MockVisionDetector (e.g. air-gapped environments).
+    enable_yolo: bool = True
     yolo_model: str = "yolov8n.pt"
     detection_confidence_threshold: float = 0.55
     fusion_alert_threshold: float = 0.65

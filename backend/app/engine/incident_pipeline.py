@@ -24,6 +24,7 @@ from app.sensors.motion import MotionSensor
 from app.sensors.panic_button import PanicButtonSensor
 from app.sensors.telemetry import TelemetrySensor
 from app.services.audit import audit
+from app.services.stream_processor import stream_processor
 
 
 @dataclass
@@ -146,11 +147,16 @@ class IncidentPipeline:
         audio_preds = self.audio.infer(mic.payload)
 
         # Surface raw inferences for the live console even when below threshold.
+        # Drop the ndarray frame from the bus payload (not JSON-serialisable).
+        scene_summary = {k: v for k, v in cam.payload.items() if k != "frame"}
         await bus.publish("inference", {
             "pole_id": node.pole_id,
-            "vision": [d.__dict__ for d in vision_dets],
+            "vision": [
+                {k: v for k, v in d.__dict__.items() if k != "extra" or v is not None}
+                for d in vision_dets
+            ],
             "audio": [p.__dict__ for p in audio_preds],
-            "scene": cam.payload,
+            "scene": scene_summary,
             "timestamp": cam.timestamp.isoformat(),
         })
         if vision_dets or audio_preds:
@@ -161,6 +167,16 @@ class IncidentPipeline:
             audio=audio_preds,
             motion_payload=mot.payload,
             panic_payload=pan.payload,
+        )
+
+        # Maintain MJPEG buffer with annotated frames for live surveillance.
+        stream_processor.annotate_and_publish(
+            pole_id=node.pole_id,
+            frame=cam.payload.get("frame"),
+            vision=vision_dets,
+            audio=audio_preds,
+            threats=threats,
+            scene_label=cam.payload.get("scene_label", "unknown"),
         )
 
         for threat in threats:

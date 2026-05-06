@@ -164,3 +164,12 @@ export const WS_URL = (() => {
     (window.location.port === "5173" ? `${window.location.hostname}:8000` : window.location.host);
   return `${proto}//${host}/api/ws`;
 })();
+
+export const STREAM_URL = (() => {
+  if (typeof window === "undefined") return "/api/stream";
+  // In dev (vite at :5173) hit the backend directly so MJPEG isn't proxied.
+  const host =
+    import.meta.env.VITE_API_HOST ??
+    (window.location.port === "5173" ? `${window.location.hostname}:8000` : window.location.host);
+  return `${window.location.protocol}//${host}/api/stream`;
+})();

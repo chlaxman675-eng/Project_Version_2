@@ -125,9 +125,29 @@ All settings can be overridden via environment variables (see
 | `DATABASE_URL` | `sqlite+aiosqlite:///./surakshanet.db` | Use Postgres in prod. |
 | `ENABLE_SIMULATION_ON_STARTUP` | `true` | Drive sensors on boot. |
 | `SIMULATION_TICK_SECONDS` | `2.0` | Per-pole tick rate. |
-| `ENABLE_YOLO` | `false` | Switch to real YOLOv8 detection. |
+| `ENABLE_YOLO` | `true` | Real YOLOv8n inference (weights auto-download on first frame). Set `false` on air-gapped boxes. |
 | `DETECTION_CONFIDENCE_THRESHOLD` | `0.55` | Per-modality cutoff. |
 | `FUSION_ALERT_THRESHOLD` | `0.65` | Final alert cutoff. |
+
+## Live annotated camera streams
+
+Each pole now produces a real `numpy.ndarray` frame on every tick (procedurally
+synthesised by default; switch to a USB webcam by setting
+`mode="webcam", camera_source=0` on `CameraSensor` or pointing it at an RTSP
+URL). The frame goes through YOLOv8n + the rule-based scene mapper
+(`HybridDetector`), and the **Stream Processor** draws bounding boxes, severity
+banners, and audio chips before publishing the JPEG.
+
+Endpoints:
+
+- `GET /api/stream/{pole_id}/snapshot` – latest annotated JPEG (single frame).
+- `GET /api/stream/{pole_id}/mjpeg` – continuous `multipart/x-mixed-replace`
+  MJPEG stream consumed directly by an `<img>` tag in the Live Surveillance
+  page.
+- `GET /api/stream/poles` – status of every per-pole frame buffer.
+
+YOLOv8n weights (~6 MB) auto-download on first inference; set `ENABLE_YOLO=false`
+to fall back to the rule-based detector on air-gapped boxes.
 
 ## MVP success metrics
 
